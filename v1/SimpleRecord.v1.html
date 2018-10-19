@@ -1,0 +1,154 @@
+<html lang=en>
+    <head>
+        <meta charset="utf-8">
+        <title>Simple Record v1</title>
+        <!-- Stuff above is basic webpage HTML code, necessary for creating the webpage interface and having the browser handle it properly -->
+
+        <!-- This next line pulls in the web3.js library from somewhere on the web, not locally -->
+        <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+
+        <!-- Great, now lets use some javascript to use the library -->
+        <script>
+            // New comment type, since this is javascript code, not HTML
+
+            // Let's declare a variable to access the contract in global scope, so we can access it from the console, etc
+            let contract;
+
+            /*
+             *  Before we can proceed, we need to deploy this contract. If you haven't already:
+             *  1. copy the code from SimpleRecord.v1.sol
+             *  2. open your browser to http://remix.ethereum.org/
+             *  3. open a new contract file and paste in the code
+             *  4. in the "Run" tab, enter "Hello world"  (with quotes) in the box next to "Deploy"
+             *  5. Press "Deploy"
+             */
+
+            // We need to provide the address of the published contract instance we want to work with
+            // 6. You can copy that from the "Deployed Contracts" interface in remix
+            let address = "";
+            /*
+                It will look like this:
+            let address = "0xe34d8953c21b3b46a7bd5929053664d90fb408ba";
+            */
+
+            // We also need to provide the ABI: Application bytecode interface
+            // This is a JSON object that describes the functions available and the parameters they require, so that
+            // the application knows what to expose and how to prepare it to interact with the contract about it
+
+            // 7. Copy this code from remix as well
+            let abi = [];
+            /*
+                It will look like this:
+            let abi = [
+                {
+                    "inputs": [
+                        {
+                            "name": "_field",
+                            "type": "string"
+                        }
+                    ],
+                    "payable": false,
+                    "stateMutability": "nonpayable",
+                    "type": "constructor"
+                },
+                {
+                    "constant": true,
+                    "inputs": [],
+                    "name": "field",
+                    "outputs": [
+                        {
+                            "name": "",
+                            "type": "string"
+                        }
+                    ],
+                    "payable": false,
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ];
+            */
+
+            // We're doing our work in this function that will be called once the page is fully loaded,
+            // to ensure that all scripts (ours and from plugins like Metamask) are loaded and available
+            window.addEventListener('load', function() {
+
+                // Let's add the address to the page, just for reference
+                document.getElementById("address").innerHTML = address;
+
+                if (typeof web3 == 'undefined') {
+                    console.log("Looks like Web3 isn't available :(");
+                } else {
+
+                    // We'll do all our interaction here for now...
+
+                    // Let's piggyback on Metamask, which pulls in the web3 library on its own. 
+                    // However, we have no control over the version we'll be working with, which can cause problems when things change.
+
+                    // Hint: things can change rapidly and cause headaches, so this is NOT a best practice.
+                    // Currently the 0.2.x branch is the default, but a 1.0.x branch is under development which will contain breaking changes
+
+                    // NOTE: Metamask will not inject Web3 when viewing the page locally using the file protocol.
+                    // If you have php installed, run a local webserver via `php -S 0.0.0.0:8008` and browse to http://localhost:8008
+                    // Otherwise, you can use a node based server like http-server: `npm install -g http-server`
+
+                    // If an instance of the web3 library is already in the page, let's make use of its provider
+                    // This is typically the web3 instances injected by Metamask. We will use the provider set up by Metamask (Infura)
+                    // but create a new instance to replace the old one to ensure we have the version of Web3 we intended to use
+                    if (typeof web3 !== 'undefined') {
+                        console.log('WAS Using Web3 version: ' + web3.version.api );
+                        web3 = new Web3(web3.currentProvider);
+                    } else {
+                        // Set the provider you want from Web3.providers
+                        web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+                    } 
+
+                    console.log('Using Web3 version: ' + web3.version.api );
+
+                    // Instantiate an interface object for the contract, using the ABI
+                    contract = web3.eth.contract(abi);
+
+                    // Now let's specify the deployed contract we want to work with
+                    console.log("Setting contract address to " + address);
+
+                    // NOTE overwriting the contract interface object with a contract instance object.
+                    contract = contract.at(address);
+                    
+                    // Generally clearer to combine these calls if you're just accessing a single contract:
+                    // contract = web3.eth.contract(abi).at(address);
+
+                    // web3.js 1.0.0 will support doing both in one shot:
+                    // contract = web3.eth.contract(abi, address);
+
+                    console.log("Contract:", contract);
+
+                    // Look at the stored value
+                    // This is a synchronous function we're in, so we need to provide a callback:
+                    contract.field.call(function(error, result){
+
+                        console.log("Our value from contract.field.call(): ", result)
+
+                        // Now let's do something with the contract
+                        document.getElementById("field").innerHTML = result;
+
+                    });
+
+                }
+            });
+
+        </script>
+
+        <!-- This style section is just some visual styling to make the page look a little nicer -->
+        <style>
+            h1,h2,h3 { text-align:center; margin-left:center; margin-right:center }
+        </style>
+    </head>
+    <body>
+        <h1>Simple Record v1</h1>
+
+        <!-- Let's show the address of the contract we're interacting with here for reference -->
+        <h2>Address: <span id="address"></span></h2>
+
+        <!-- Now the element where we'll display the value -->
+        <h3>Field: <span id="field"></span></h3>
+    </body>
+</html>
